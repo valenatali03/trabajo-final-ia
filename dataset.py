@@ -14,7 +14,7 @@ def obtener_reviews(
         app_ids: Union[int, List[int]],
         pos_limit: int = 100,
         neg_limit: int = 100,
-        idioma: str = "english"
+        idioma: str = "spanish"
     ) -> Dataset:
     """
     Descarga reviews desde la API de Steam, solamente en el idioma indicado.
