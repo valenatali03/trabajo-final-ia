@@ -203,8 +203,11 @@ if __name__ == "__main__":
     # lego starwars complete saga,
     # lego batman,
     # lego indiana jones 2
+    # lego jurassic world
+    # lego marvel super heroes
+    # lego lord of the rings
     dataset = obtener_reviews_cache(
-        app_ids=[32330, 311770, 32440, 21000, 32450],
+        app_ids=[32330, 311770, 32440, 21000, 32450, 352400, 249130, 214510, ],
         max_diff=50 # Máxima diferencia permitida: 50 reviews
     )
     print("Cantidad final:", len(dataset))
