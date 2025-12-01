@@ -1,8 +1,7 @@
 import os
 import json
 import requests
-from typing import TypedDict, List, Union, Set
-import random
+from typing import TypedDict, List, Union
 
 # --- Estructuras de Datos ---
 class Review(TypedDict):
@@ -12,90 +11,10 @@ class Review(TypedDict):
 
 Dataset = List[Review]
 
-# Definimos un límite muy alto para maximizar la recolección
-MAX_FETCH_LIMIT = 1000
-MAX_DIFF = 50 # Diferencia máxima permitida entre clases
-
-# --- Funciones de Obtención de Reviews (CON MODIFICACIONES LEVES) ---
-
-def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: str) -> Dataset:
-    """Busca las reviews dependiendo del tipo de valoración de la review"""
-    resultado: Dataset = []
-    seen_ids: Set[str] = set()
-    cursor = "*"
-
-    url = f"https://store.steampowered.com/appreviews/{app_id}"
-
-    # Nota: Aquí limit será un valor muy grande (MAX_FETCH_LIMIT)
-    print(f"Buscando hasta {limit} reviews de tipo: '{review_type}'")
-
-    while len(resultado) < limit:
-        params = {
-            "json": 1,
-            "filter": "recent",
-            "language": idioma,
-            "review_type": review_type,
-            "purchase_type": "all",
-            "num_per_page": 100,
-            "cursor": cursor
-        }
-
-        try:
-            # Añadir un control de tiempo para evitar bloquearse si la API está lenta
-            response = requests.get(url, params=params, timeout=10).json()
-        except Exception as e:
-            print(f"Error de conexión: {e}")
-            break
-
-        reviews = response.get("reviews", [])
-        nuevo_cursor = response.get("cursor")
-
-        if not reviews:
-            print(f"La API no devolvió más reviews de tipo '{review_type}'. Fin de la paginación.")
-            break
-
-        if nuevo_cursor == cursor:
-            # Esto puede pasar si ya llegamos al final de todas las reviews
-            if len(reviews) == 0:
-                 print("El cursor no cambió (sin más reviews).")
-            else:
-                 # Pequeña pausa para evitar sobrecargar la API si el cursor se atasca
-                 import time; time.sleep(1)
-
-            break
-
-        cursor = nuevo_cursor
-
-        for r in reviews:
-            if len(resultado) >= limit:
-                break
-
-            review_id = str(r["recommendationid"])
-
-            if review_id in seen_ids:
-                continue
-
-            review_text = r["review"].strip()
-
-            if not review_text:
-                continue
-
-            item: Review = {
-                "review_id": review_id,
-                "review": review_text,
-                "voted_up": True if review_type == "positive" else False
-            }
-
-            resultado.append(item)
-            seen_ids.add(review_id)
-
-    print(f"Reviews encontradas para {review_type}: {len(resultado)}")
-    return resultado
-
 def obtener_reviews(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
-        neg_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
+        pos_limit: int = 100,
+        neg_limit: int = 100,
         idioma: str = "spanish"
     ) -> Dataset:
 
@@ -103,19 +22,47 @@ def obtener_reviews(
         app_ids = [app_ids]
 
     dataset: Dataset = []
+    print("Creando dataset...")
 
     for app_id in app_ids:
-        print(f"\n--- Procesando Juego ID: {app_id} ---")
 
-        # Intenta obtener el máximo de ambas
-        positivas = obtener_reviews_por_tipo(app_id, "positive", pos_limit, idioma)
-        negativas = obtener_reviews_por_tipo(app_id, "negative", neg_limit, idioma)
+        url = f"https://store.steampowered.com/appreviews/{app_id}"
 
-        total_juego = positivas + negativas
-        dataset.extend(total_juego)
+        cursor = "*"
+        params = {
+            "json": 1,
+            "language": idioma,
+            "num_per_page": 100,
+            "cursor": cursor
+        }
 
-        print(f"Total agregado para este juego: {len(total_juego)} (Pos: {len(positivas)}, Neg: {len(negativas)})")
+        positivas: Dataset = []
+        negativas: Dataset = []
 
+        # Seguimos pidiendo hasta llegar al límite
+        while len(positivas) < pos_limit or len(negativas) < neg_limit:
+            request = requests.get(url, params=params).json()
+            reviews = request.get("reviews", [])
+
+            if not reviews:
+                break
+
+            for r in reviews:
+                if r.get("voted_up") and len(positivas) < pos_limit:
+                    positivas.append({"review": r["review"], "voted_up": True})
+                elif not r.get("voted_up") and len(negativas) < neg_limit:
+                    negativas.append({"review": r["review"], "voted_up": False})
+
+            params["cursor"] = request["cursor"]
+
+        # Mezclamos uno y uno
+        for p, n in zip(positivas, negativas):
+            dataset.append(p)
+            dataset.append(n)
+
+        print(f"Juego {app_id}: terminado.")
+
+    print(f"Dataset creado. Total: {len(dataset)} elementos")
     return dataset
 
 # --- Función de Cache con Balanceo Óptimo (MODIFICADA) ---
