@@ -10,7 +10,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Steam Reviews")
 
         self.tabs = QTabWidget()
-        self.tabs.setTabPosition(QTabWidget.North) # Pestañas arriba
+        self.tabs.setTabPosition(QTabWidget.North)
         self.tabs.setMovable(True)
 
         self.dataset_tab = DatasetTab()

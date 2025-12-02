@@ -134,7 +134,7 @@ def obtener_reviews_cache(
     print("No existe el dataset, descargando desde Steam (Maximizando)...")
 
     # 1. Descarga el dataset con el límite alto
-    dataset_crudo = obtener_reviews(app_ids, MAX_FETCH_LIMIT, MAX_FETCH_LIMIT, idioma)
+    dataset_crudo = obtener_reviews(app_ids, pos_limit=pos_limit, neg_limit=neg_limit, idioma= idioma)
 
     # 2. Separar Positivas y Negativas
     positivas = [r for r in dataset_crudo if r["voted_up"]]
