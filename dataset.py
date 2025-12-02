@@ -1,16 +1,9 @@
 import os
 import json
 import requests
-from typing import TypedDict, List, Union, Set
+from structs import Dataset, Review
+from typing import List, Union, Set
 import random
-
-# --- Estructuras de Datos ---
-class Review(TypedDict):
-    review_id: str
-    review: str
-    voted_up: bool
-
-Dataset = List[Review]
 
 # Definimos un límite muy alto para maximizar la recolección
 MAX_FETCH_LIMIT = 1000

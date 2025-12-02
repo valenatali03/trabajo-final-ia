@@ -1,19 +1,11 @@
 import os
 import json
-from typing import List, TypedDict, Union, Set
-import random
+from structs import Dataset
 
 # --- Constantes y Estructuras de Datos ---
 ARCHIVO_DATASET = "steam_reviews.json"
 MIN_WORDS = 2    # Mínimo de 2 palabras (para filtrar reviews de 1 sola palabra)
 MAX_WORDS = 25   # Máximo de 25 palabras
-
-class Review(TypedDict):
-    review_id: str
-    review: str
-    voted_up: bool
-
-Dataset = List[Review]
 
 # ----------------------------------------
 # --- Lógica de Limpieza ---
