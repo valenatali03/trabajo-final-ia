@@ -1,63 +1,71 @@
 import requests
 import time
-import json
+from PySide6.QtCore import QObject, Signal
+from structs import SteamApps
 
-def obtener_apps(api_key):
+class WorkerSignals(QObject):
+    finished = Signal()
+    error = Signal(str)
+    progress = Signal(int)
+    data_ready = Signal(list)
 
-    url = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
-        
-    todas_las_apps = []
-    last_appid = 0
+class SteamWorker(QObject):
+    def __init__(self, api_key: str):
+        super().__init__()
+        self.signals = WorkerSignals()
+        self.is_running : bool = True
+        self.url : str = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
+        self.todas_las_apps : SteamApps = []
+        self.last_appid : int = 0
+        self.api_key : str = api_key
 
-    if not api_key:
-        print("Coloque una api_key valida")
-        return
+    def run(self):
+        if not self.api_key:
+            self.signals.error.emit("Por favor, coloca una API Key válida.")
+            self.signals.finished.emit()
+            return
 
-    print("Iniciando descarga")
-    for _ in range(3):
-        params = {
-                    'key': api_key,
-                    'max_results': 50000, # El máximo permitido por página
-                    'last_appid': last_appid,
-                    'include_games': 'true',
-                    'include_dlc': 'false',
-                    'include_software': 'false',
-                    'include_hardware': 'false'
-                }
         try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            for i in range(3): 
+                if not self.is_running: break
 
-            if 'response' in data and 'apps' in data['response']:
-                apps = data['response']['apps']
+                params = {
+                    'key': self.api_key,
+                    'max_results': 50000,
+                    'last_appid': self.last_appid,
+                    'include_games': 'true'
+                }
 
-                apps_optimizado = [{'appid': app['appid'], 'name': app['name']} for app in apps]
+                response = requests.get(self.url, params=params, timeout=10)
                 
-                todas_las_apps.extend(apps_optimizado)
+                if response.status_code == 403:
+                    self.signals.error.emit("La API Key es incorrecta o ha sido revocada (Error 403).")
+                    return
+                
+                response.raise_for_status()
+                
+                data = response.json()
 
-                last_appid = apps_optimizado[-1]['appid']
+                if 'response' in data and 'apps' in data['response']:
+                    apps = data['response']['apps']
+                    apps_optimizado = [{'appid': app['appid'], 'name': app['name']} for app in apps]
+                    
+                    self.todas_las_apps.extend(apps_optimizado)
+                    
+                    if apps_optimizado:
+                        self.last_appid = apps_optimizado[-1]['appid']
 
-                print(f"Descargados {len(todas_las_apps)} ítems hasta ahora... (último ID: {last_appid})")
+                    self.signals.progress.emit((i + 1) * 33)
+                    time.sleep(1)
+                else:
+                    break
 
-                time.sleep(1)
-        except requests.exceptions.HTTPError as e:
-            if response.status_code == 403:
-                raise ValueError("La API Key es incorrecta o ha sido revocada.")
-            else:
-                print(f"Error HTTP inesperado: {e}")
-                break
+            self.signals.data_ready.emit(self.todas_las_apps)
 
         except requests.exceptions.RequestException as e:
-            print(f"Error de conexión: {e}")
-            break
+            self.signals.error.emit(f"Error de conexión: {str(e)}")
         except Exception as e:
-            print(f"Error: {e}")
-            break
+            self.signals.error.emit(f"Error inesperado: {str(e)}")
+        finally:
+            self.signals.finished.emit()
 
-    print(f"\n¡Terminado! Total de Apps encontradas: {len(todas_las_apps)}")
-        
-    with open('steam_apps_cache.json', 'w', encoding='utf-8') as f:
-        json.dump(todas_las_apps, f, indent=4)
-            
-    print("Guardado en 'steam_apps_cache.json'")

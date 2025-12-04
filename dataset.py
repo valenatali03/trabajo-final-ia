@@ -216,7 +216,7 @@ if __name__ == "__main__":
     # lego star wars the force awakens
     # lego movie 2 videogame
     dataset = obtener_reviews_cache(
-        app_ids=[32330, 311770, 32440, 21000, 32450, 352400, 249130, 214510, 267530, 32510, 1544360, 1969370, 1538550, 1898290, 647830, 438640, 881320],
+        app_ids=[438640, 881320, 2428810, 204120, 285160],
         max_diff=50 # Máxima diferencia permitida: 50 reviews
     )
     print("Cantidad final:", len(dataset))
