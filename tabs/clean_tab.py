@@ -1,33 +1,26 @@
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLineEdit, QLabel, QPushButton, QSpinBox
-
+from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QSpinBox, QFormLayout
+import clean
+from const import MAX_WORDS, MIN_WORDS
 class CleanTab(QWidget):
 
     def __init__(self):
         super().__init__()
 
-        self.label_dataset_file = QLabel("Introduzca el nombre del archivo del dataset \
-                                          (steam_review.json por defecto):")
-        
-        self.line_edit_dataset_file = QLineEdit()
+        layout = QFormLayout()
 
-        self.label_min_words = QLabel("Introduzca la cantidad mínima de palabras en cada review:")
-        
+        self.line_edit_dataset_file = QLineEdit(placeholderText="steam_review.json")
         self.spinbox_min_words = QSpinBox()
-
-        self.label_max_words = QLabel("Introduzca la cantidad máxima de palabras en cada review:")
-
+        self.spinbox_min_words.setMinimum(MIN_WORDS)
+        self.spinbox_min_words.valueChanged.connect(lambda: self.spinbox_max_words.setMinimum(self.spinbox_min_words.value()))
         self.spinbox_max_words = QSpinBox()
-
+        self.spinbox_max_words.setMinimum(self.spinbox_min_words.value())
+        self.spinbox_max_words.setValue(MAX_WORDS)
         self.button = QPushButton("Limpiar dataset")
+        self.button.clicked.connect(lambda: clean.ejecutar_limpieza(self.spinbox_min_words.value(), self.spinbox_max_words.value()))
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.label_dataset_file)
-        layout.addWidget(self.line_edit_dataset_file)
-        layout.addWidget(self.label_min_words)
-        layout.addWidget(self.spinbox_min_words)
-        layout.addWidget(self.label_max_words)
-        layout.addWidget(self.spinbox_max_words)
-        layout.addWidget(self.button)
-        layout.addStretch()
+        layout.addRow("Introduzca el nombre del archivo del dataset", self.line_edit_dataset_file)
+        layout.addRow("Introduzca la cantidad mínima de palabras en cada review", self.spinbox_min_words)
+        layout.addRow("Introduzca la cantidad máxima de palabras en cada review", self.spinbox_max_words)
+        layout.addRow(self.button)
 
         self.setLayout(layout)

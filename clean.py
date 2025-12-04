@@ -1,17 +1,17 @@
 import os
 import json
 from structs import Dataset
+from const import MAX_WORDS, MIN_WORDS
+
 
 # --- Constantes y Estructuras de Datos ---
 ARCHIVO_DATASET = "steam_reviews.json"
-MIN_WORDS = 2    # Mínimo de 2 palabras (para filtrar reviews de 1 sola palabra)
-MAX_WORDS = 25   # Máximo de 25 palabras
 
 # ----------------------------------------
 # --- Lógica de Limpieza ---
 # ----------------------------------------
 
-def limpiar_reviews_por_longitud(dataset: Dataset) -> Dataset:
+def limpiar_reviews_por_longitud(dataset: Dataset, min_words, max_words) -> Dataset:
     """
     Filtra el dataset para eliminar reviews que contienen:
     1. Solo una palabra.
@@ -23,7 +23,7 @@ def limpiar_reviews_por_longitud(dataset: Dataset) -> Dataset:
     reviews_eliminadas_max = 0
 
     print(f"Iniciando limpieza. Total de reviews iniciales: {reviews_iniciales}")
-    print(f"Criterio: Conservar reviews entre {MIN_WORDS} y {MAX_WORDS} palabras.")
+    print(f"Criterio: Conservar reviews entre {min_words} y {max_words} palabras.")
 
     for review_item in dataset:
         review_text = review_item["review"].strip()
@@ -32,12 +32,12 @@ def limpiar_reviews_por_longitud(dataset: Dataset) -> Dataset:
         word_count = len(review_text.split())
 
         # 1. Filtro Mínimo: ¿Es de solo 1 palabra?
-        if word_count < MIN_WORDS:
+        if word_count < min_words:
             reviews_eliminadas_min += 1
             continue
 
         # 2. Filtro Máximo: ¿Excede el límite de 20 palabras?
-        if word_count > MAX_WORDS:
+        if word_count > max_words:
             reviews_eliminadas_max += 1
             continue
 
@@ -48,13 +48,13 @@ def limpiar_reviews_por_longitud(dataset: Dataset) -> Dataset:
 
     print("--- Resultados del Filtrado ---")
     print(f"Reviews eliminadas (1 palabra): {reviews_eliminadas_min}")
-    print(f"Reviews eliminadas (Más de {MAX_WORDS} palabras): {reviews_eliminadas_max}")
+    print(f"Reviews eliminadas (Más de {max_words} palabras): {reviews_eliminadas_max}")
     print(f"Reviews eliminadas (Total): {reviews_eliminadas_total}")
     print(f"Reviews conservadas (final): {len(reviews_conservadas)}")
 
     return reviews_conservadas
 
-def ejecutar_limpieza():
+def ejecutar_limpieza(min_words, max_words):
     """Carga el dataset, lo limpia y lo guarda."""
 
     if not os.path.exists(ARCHIVO_DATASET):
@@ -68,7 +68,7 @@ def ejecutar_limpieza():
         dataset_crudo = json.load(f)
 
     # 2. Limpiar el dataset
-    dataset_limpio = limpiar_reviews_por_longitud(dataset_crudo)
+    dataset_limpio = limpiar_reviews_por_longitud(dataset_crudo, min_words, max_words)
 
     # 3. Guardar el dataset limpio (sobrescribe el original)
     print(f"\nGuardando dataset limpio en {ARCHIVO_DATASET}...")
@@ -80,4 +80,4 @@ def ejecutar_limpieza():
 
 
 if __name__ == "__main__":
-    ejecutar_limpieza()
+    ejecutar_limpieza(MIN_WORDS, MAX_WORDS)

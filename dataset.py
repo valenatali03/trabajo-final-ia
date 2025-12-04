@@ -1,9 +1,16 @@
 import os
 import json
 import requests
-from structs import Dataset, Review
-from typing import List, Union, Set
+from typing import TypedDict, List, Union, Set
 import random
+
+# --- Estructuras de Datos ---
+class Review(TypedDict):
+    review_id: str
+    review: str
+    voted_up: bool
+
+Dataset = List[Review]
 
 # Definimos un límite muy alto para maximizar la recolección
 MAX_FETCH_LIMIT = 1000
@@ -134,7 +141,7 @@ def obtener_reviews_cache(
     print("No existe el dataset, descargando desde Steam (Maximizando)...")
 
     # 1. Descarga el dataset con el límite alto
-    dataset_crudo = obtener_reviews(app_ids, pos_limit=pos_limit, neg_limit=neg_limit, idioma= idioma)
+    dataset_crudo = obtener_reviews(app_ids, MAX_FETCH_LIMIT, MAX_FETCH_LIMIT, idioma)
 
     # 2. Separar Positivas y Negativas
     positivas = [r for r in dataset_crudo if r["voted_up"]]
@@ -199,8 +206,17 @@ if __name__ == "__main__":
     # lego jurassic world
     # lego marvel super heroes
     # lego lord of the rings
+    # lego movie videogame
+    # lego star wars 3
+    # lego builder journey
+    # lego party
+    # lego voyagers
+    # lego bricktales
+    # lego marvel super heroes 2
+    # lego star wars the force awakens
+    # lego movie 2 videogame
     dataset = obtener_reviews_cache(
-        app_ids=[32330, 311770, 32440, 21000, 32450, 352400, 249130, 214510, ],
+        app_ids=[32330, 311770, 32440, 21000, 32450, 352400, 249130, 214510, 267530, 32510, 1544360, 1969370, 1538550, 1898290, 647830, 438640, 881320],
         max_diff=50 # Máxima diferencia permitida: 50 reviews
     )
     print("Cantidad final:", len(dataset))
