@@ -2,13 +2,14 @@ from PySide6.QtWidgets import QMainWindow, QTabWidget
 from tabs.dataset_tab import DatasetTab
 from tabs.clean_tab import CleanTab
 from dataset_manager import DatasetManager
+from const import *
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
 
-        self.dataset_manager = DatasetManager('steam_apps_cache.json')
+        self.dataset_manager = DatasetManager(STEAM_APPS_CACHE)
 
         self.setWindowTitle("Steam Reviews")
 
