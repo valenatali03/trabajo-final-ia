@@ -4,7 +4,7 @@ import requests
 from typing import TypedDict, List, Union, Set
 import random
 
-# --- Estructuras de Datos ---
+# estructuras de datos:
 class Review(TypedDict):
     review_id: str
     review: str
@@ -12,21 +12,17 @@ class Review(TypedDict):
 
 Dataset = List[Review]
 
-# Definimos un límite muy alto para maximizar la recolección
-MAX_FETCH_LIMIT = 1000
-MAX_DIFF = 50 # Diferencia máxima permitida entre clases
+MAX_FETCH_LIMIT = 1000 # cant de reseñas a descargar de cada tipo por juego
+MAX_DIFF = 50          # diferencia máxima permitida entre clases
 
-# --- Funciones de Obtención de Reviews (CON MODIFICACIONES LEVES) ---
-
+# busca las reviews dependiendo del tipo de valoración de la review
 def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: str) -> Dataset:
-    """Busca las reviews dependiendo del tipo de valoración de la review"""
     resultado: Dataset = []
     seen_ids: Set[str] = set()
     cursor = "*"
 
     url = f"https://store.steampowered.com/appreviews/{app_id}"
 
-    # Nota: Aquí limit será un valor muy grande (MAX_FETCH_LIMIT)
     print(f"Buscando hasta {limit} reviews de tipo: '{review_type}'")
 
     while len(resultado) < limit:
@@ -41,7 +37,7 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: 
         }
 
         try:
-            # Añadir un control de tiempo para evitar bloquearse si la API está lenta
+            # tiene un control de tiempo para evitar que se bloquee si la API está llena
             response = requests.get(url, params=params, timeout=10).json()
         except Exception as e:
             print(f"Error de conexión: {e}")
@@ -55,11 +51,11 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: 
             break
 
         if nuevo_cursor == cursor:
-            # Esto puede pasar si ya llegamos al final de todas las reviews
+            # esto puede pasar si ya llegamos al final de todas las reviews
             if len(reviews) == 0:
                  print("El cursor no cambió (sin más reviews).")
             else:
-                 # Pequeña pausa para evitar sobrecargar la API si el cursor se atasca
+                 # pausa para evitar sobrecargar la API si el cursor se atasca
                  import time; time.sleep(1)
 
             break
@@ -94,8 +90,8 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: 
 
 def obtener_reviews(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
-        neg_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
+        pos_limit: int = MAX_FETCH_LIMIT,
+        neg_limit: int = MAX_FETCH_LIMIT,
         idioma: str = "spanish"
     ) -> Dataset:
 
@@ -107,7 +103,6 @@ def obtener_reviews(
     for app_id in app_ids:
         print(f"\n--- Procesando Juego ID: {app_id} ---")
 
-        # Intenta obtener el máximo de ambas
         positivas = obtener_reviews_por_tipo(app_id, "positive", pos_limit, idioma)
         negativas = obtener_reviews_por_tipo(app_id, "negative", neg_limit, idioma)
 
@@ -118,12 +113,11 @@ def obtener_reviews(
 
     return dataset
 
-# --- Función de Cache con Balanceo Óptimo (MODIFICADA) ---
-
+# función de cache con balanceo
 def obtener_reviews_cache(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT, # Se ignoran si el archivo no existe
-        neg_limit: int = MAX_FETCH_LIMIT, # Se ignoran si el archivo no existe
+        pos_limit: int = MAX_FETCH_LIMIT, # se ignoran si el archivo no existe
+        neg_limit: int = MAX_FETCH_LIMIT,
         idioma: str = "spanish",
         archivo: str = "steam_reviews.json",
         max_diff: int = MAX_DIFF
@@ -140,10 +134,10 @@ def obtener_reviews_cache(
 
     print("No existe el dataset, descargando desde Steam (Maximizando)...")
 
-    # 1. Descarga el dataset con el límite alto
+    # descarga el dataset
     dataset_crudo = obtener_reviews(app_ids, MAX_FETCH_LIMIT, MAX_FETCH_LIMIT, idioma)
 
-    # 2. Separar Positivas y Negativas
+    # separar positivas y negativas
     positivas = [r for r in dataset_crudo if r["voted_up"]]
     negativas = [r for r in dataset_crudo if not r["voted_up"]]
 
@@ -153,23 +147,22 @@ def obtener_reviews_cache(
     print(f"\n--- Balanceo de Clases ---")
     print(f"Datos crudos: Positivas: {len_pos}, Negativas: {len_neg}")
 
-    # 3. Aplicar Balanceo (Downsampling solo si es necesario)
+    # aplicar balanceo si es necesario
     diff = abs(len_pos - len_neg)
 
     if diff > max_diff:
         print(f"Diferencia ({diff}) excede el límite de {max_diff}. Aplicando downsampling.")
 
-        # Clase menor define el límite base
+        # la clase menor define el límite base
         min_len = min(len_pos, len_neg)
 
-        # El objetivo es min_len + max_diff
         nuevo_limite = min_len + max_diff
 
         if len_pos > len_neg:
-            # Reducir Positivas para que queden con el nuevo límite
+            # reducir positivas
             positivas = random.sample(positivas, nuevo_limite)
         else:
-            # Reducir Negativas para que queden con el nuevo límite
+            # reducir negativas
             negativas = random.sample(negativas, nuevo_limite)
 
         print(f"Tamaños ajustados: Positivas: {len(positivas)}, Negativas: {len(negativas)}")
@@ -177,11 +170,11 @@ def obtener_reviews_cache(
         print(f"Diferencia ({diff}) está dentro del límite de {max_diff}. No se requiere downsampling.")
 
 
-    # 4. Recombinar y Mezclar
+    # recombinar de nuevo
     dataset_balanceado = positivas + negativas
     random.shuffle(dataset_balanceado)
 
-    # 5. Guardar
+    # guardar
     len_pos_final = len(positivas)
     len_neg_final = len(negativas)
     print(f"Dataset final: Positivas: {len_pos_final}, Negativas: {len_neg_final}")
@@ -193,10 +186,7 @@ def obtener_reviews_cache(
 
     return dataset_balanceado
 
-# Ejecución directa para probar
 if __name__ == "__main__":
-    # Nota: Los límites de pos_limit y neg_limit en esta llamada son ignorados por la función
-    # ya que internamente usa MAX_FETCH_LIMIT, a menos que uses el archivo de caché.
 
     # Lego indiana jones,
     # lego harry potter,
@@ -216,7 +206,7 @@ if __name__ == "__main__":
     # lego star wars the force awakens
     # lego movie 2 videogame
     dataset = obtener_reviews_cache(
-        app_ids=[438640, 881320, 2428810, 204120, 285160],
-        max_diff=50 # Máxima diferencia permitida: 50 reviews
+        app_ids=[32330, 311770, 32440, 21000, 32450, 352400, 249130, 214510, 267530, 32510, 1544360, 1969370, 1538550, 1898290, 647830, 438640, 881320, 2428810, 204120, 285160],
+        max_diff=50
     )
     print("Cantidad final:", len(dataset))
