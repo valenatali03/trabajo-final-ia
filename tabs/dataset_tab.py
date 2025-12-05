@@ -1,9 +1,11 @@
 from PySide6.QtWidgets import (QVBoxLayout, QWidget, QLineEdit, QPushButton, 
                                QSpinBox, QFormLayout, QCompleter, QHBoxLayout,
-                               QScrollArea, QLabel, QFrame)
-from PySide6.QtCore import Qt, QStringListModel
-from dataset import obtener_reviews_cache, MAX_FETCH_LIMIT
+                               QScrollArea, QLabel, QFrame, QMessageBox, QProgressBar)
+from PySide6.QtCore import Qt, QStringListModel, QThread, QRegularExpression
+from PySide6.QtGui import QRegularExpressionValidator
+from dataset import MAX_FETCH_LIMIT
 from dataset_manager import DatasetManager
+from workers import DatasetWorker
 
 class DatasetTab(QWidget):
     def __init__(self, dataset_manager: DatasetManager):
@@ -25,6 +27,21 @@ class DatasetTab(QWidget):
         
         self.scroll_area.setWidget(self.container_items)
 
+        self.btn_agregar = QPushButton("+ Agregar otro juego")
+        self.btn_agregar.setFixedWidth(150)
+        self.btn_agregar.clicked.connect(self.agregar_nueva_fila)
+
+        self.line_edit_filename = QLineEdit("steam_reviews.json")
+        self.line_edit_filename.setPlaceholderText("nombre_del_archivo.json")
+
+        regex = QRegularExpression(r"^[\w\-. ]+$")
+        validator = QRegularExpressionValidator(regex, self.line_edit_filename)
+        self.line_edit_filename.setValidator(validator)
+
+        self.line_edit_filename.editingFinished.connect(self.validar_extension_json)
+
+        self.spinbox_max_diff = QSpinBox()
+
         self.spinbox_pos_limit = QSpinBox()
         self.spinbox_pos_limit.setMaximum(MAX_FETCH_LIMIT)
         self.spinbox_neg_limit = QSpinBox()
@@ -33,15 +50,24 @@ class DatasetTab(QWidget):
         form_layout = QFormLayout()
         form_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
         form_layout.setSpacing(10)
+        form_layout.addRow("Nombre del dataset:", self.line_edit_filename)
         form_layout.addRow("Límite positivas:", self.spinbox_pos_limit)
         form_layout.addRow("Límite negativas:", self.spinbox_neg_limit)
+        form_layout.addRow("Máxima diferencia entre reviews:", self.spinbox_max_diff)
 
         self.button = QPushButton("Crear dataset")
         self.button.clicked.connect(self.crear_dataset)
-        
-        self.btn_agregar = QPushButton("+ Agregar otro juego")
-        self.btn_agregar.setFixedWidth(150)
-        self.btn_agregar.clicked.connect(self.agregar_nueva_fila)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setVisible(False)
+
+        self.status_label = QLabel("")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("color: gray; font-style: italic;")
+        self.status_label.setVisible(False)
 
         layout = QVBoxLayout()
         
@@ -59,6 +85,9 @@ class DatasetTab(QWidget):
         layout.addLayout(form_layout)
         layout.addSpacing(10)
         layout.addWidget(self.button)
+        layout.addSpacing(10)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.progress_bar)
         layout.addStretch()
 
         self.setLayout(layout)
@@ -67,8 +96,18 @@ class DatasetTab(QWidget):
         
         self.agregar_nueva_fila()
 
+    def obtener_juegos_seleccionados(self) -> set:
+        seleccionados = set()
+        for i in range(self.layout_items.count()):
+            fila = self.layout_items.itemAt(i).widget()
+            if fila:
+                texto = fila.obtener_texto()
+                if texto:
+                    seleccionados.add(texto)
+        return seleccionados
+
     def agregar_nueva_fila(self):
-        fila = FilaJuego(self.modelo_completer, self.todos_los_juegos)
+        fila = FilaJuego(self.modelo_completer, self.todos_los_juegos, self.obtener_juegos_seleccionados)
         self.layout_items.addWidget(fila)
         fila.line_edit_appid.setFocus()
 
@@ -86,6 +125,8 @@ class DatasetTab(QWidget):
                 fila = self.layout_items.itemAt(i).widget()
                 if fila:
                     texto = fila.obtener_texto()
+                    fila.setEnabled(False)
+                    fila.btn_eliminar.setEnabled(False)
                     if texto:
                         app_id = int(texto.split(" ")[0])
                         app_ids.append(app_id)
@@ -93,22 +134,109 @@ class DatasetTab(QWidget):
             if not app_ids:
                 print("No hay IDs seleccionados")
                 return
+            
+            filename = self.line_edit_filename.text()
+            self.line_edit_filename.setEnabled(False)
 
             pos_limit = self.spinbox_pos_limit.value()
-            neg_limit = self.spinbox_neg_limit.value()
+            self.spinbox_pos_limit.setEnabled(False)
 
-            obtener_reviews_cache(app_ids, pos_limit=pos_limit, neg_limit=neg_limit)
+            neg_limit = self.spinbox_neg_limit.value()
+            self.spinbox_neg_limit.setEnabled(False)
+
+            max_diff = self.spinbox_max_diff.value()
+            self.spinbox_max_diff.setEnabled(False)
+
+            self.btn_agregar.setEnabled(False)
+
+            self.button.setText("Creando dataset...")
+            self.button.setEnabled(False)
+
+            self.progress_bar.setValue(0)
+            self.progress_bar.setVisible(True)
+            self.status_label.setText("Iniciando...")
+            self.status_label.setVisible(True)
+
+            self.thread = QThread()
+            self.worker = DatasetWorker(app_ids, pos_limit, neg_limit, filename, max_diff)
+            self.worker.moveToThread(self.thread)
+
+            self.thread.started.connect(self.worker.run)
+
+            self.worker.signals.error.connect(self.mostrar_error)
+            self.worker.signals.data_ready.connect(self.procesar_datos_exitosos)
+            self.worker.signals.log.connect(self.status_label.setText)
+            self.worker.signals.progress.connect(self.actualizar_barra_progreso)
+            self.worker.signals.finished.connect(self.limpiar_thread)
+            self.worker.signals.finished.connect(self.restaurar_ui)
+
+            self.thread.start()
             
         except (ValueError, IndexError) as e:
             print(f"Error al procesar: {e}")
 
+    def mostrar_error(self, mensaje_error):
+        QMessageBox.critical(self, "Error", mensaje_error)
+
+    def procesar_datos_exitosos(self, datos):
+        dataset = DatasetManager(self.line_edit_filename.text())
+        dataset.guardar_datos(datos)
+
+        QMessageBox.information(self, "Éxito", "Dataset creado exitosamente")
+    
+    def actualizar_barra_progreso(self, valor):
+        self.progress_bar.setValue(valor)
+
+    def limpiar_thread(self):
+        self.thread.quit()
+        self.thread.wait()
+        self.thread.deleteLater()
+        self.worker.deleteLater()
+
+    def restaurar_ui(self):
+        for i in range(self.layout_items.count()):
+                fila = self.layout_items.itemAt(i).widget()
+                if fila:
+                    fila.setEnabled(True)
+                    fila.btn_eliminar.setEnabled(True)
+
+        self.line_edit_filename.setEnabled(True)
+
+        self.spinbox_max_diff.setEnabled(True)
+
+        self.spinbox_pos_limit.setEnabled(True)
+
+        self.spinbox_neg_limit.setEnabled(True)
+
+        self.btn_agregar.setEnabled(True)
+
+        self.button.setText("Crear dataset")
+
+        self.button.setEnabled(True)
+
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setVisible(False)
+
+        self.status_label.setVisible(False)
+
+    def validar_extension_json(self):
+        texto = self.line_edit_filename.text().strip()
+        
+        if not texto:
+            return
+        
+        if not texto.lower().endswith(".json"):
+            nuevo_texto = f"{texto}.json"
+            self.line_edit_filename.setText(nuevo_texto)
 
 class FilaJuego(QWidget):
-    def __init__(self, modelo_juegos : QStringListModel, lista_juegos):
+    def __init__(self, modelo_juegos : QStringListModel, lista_juegos, callback_juegos_usados):
         super().__init__()
 
         self.modelo_juegos = modelo_juegos
         self.lista_juegos = lista_juegos
+        self.callback_juegos_usados = callback_juegos_usados
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -142,8 +270,11 @@ class FilaJuego(QWidget):
         coincidencias = []
         contador = 0
         LIMITE = 30
+
+        juegos_usados = self.callback_juegos_usados()
+
         for juego in self.lista_juegos:
-            if texto_usuario in juego.lower():
+            if texto_usuario in juego.lower() and juego not in juegos_usados:
                 coincidencias.append(juego)
                 contador += 1
                 if contador >= LIMITE:

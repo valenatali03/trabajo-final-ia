@@ -1,31 +1,47 @@
 import os
 import json
 import requests
-from typing import TypedDict, List, Union, Set
+from typing import List, Union, Set
+from structs import Review, Dataset
 import random
-
-# estructuras de datos:
-class Review(TypedDict):
-    review_id: str
-    review: str
-    voted_up: bool
-
-Dataset = List[Review]
 
 MAX_FETCH_LIMIT = 1000 # cant de reseñas a descargar de cada tipo por juego
 MAX_DIFF = 50          # diferencia máxima permitida entre clases
 
-# busca las reviews dependiendo del tipo de valoración de la review
-def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: str) -> Dataset:
+# --- Funciones de Obtención de Reviews (CON MODIFICACIONES LEVES) ---
+
+def _error(callbacks, error):
+    if callbacks and 'error' in callbacks:
+        callbacks['error'](error)
+
+def _progreso(callbacks, valor):
+    if callbacks and 'progress' in callbacks:
+        callbacks['progress'](valor)
+
+def _check_stop(callbacks):
+    if callbacks and 'check_stop' in callbacks:
+        if callbacks['check_stop']():
+            raise InterruptedError("Detenido por el usuario")
+        
+def _log(callbacks, msg):
+    if callbacks and 'log' in callbacks:
+        callbacks['log'](msg)
+
+def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, 
+                             idioma: str, callbacks = None) -> Dataset:
+    """Busca las reviews dependiendo del tipo de valoración de la review"""
     resultado: Dataset = []
     seen_ids: Set[str] = set()
     cursor = "*"
 
     url = f"https://store.steampowered.com/appreviews/{app_id}"
 
-    print(f"Buscando hasta {limit} reviews de tipo: '{review_type}'")
+    _log(callbacks, f"Buscando hasta {limit} reviews de tipo: '{review_type}'")
 
     while len(resultado) < limit:
+
+        _check_stop(callbacks)
+
         params = {
             "json": 1,
             "filter": "recent",
@@ -40,20 +56,20 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: 
             # tiene un control de tiempo para evitar que se bloquee si la API está llena
             response = requests.get(url, params=params, timeout=10).json()
         except Exception as e:
-            print(f"Error de conexión: {e}")
+            _error(callbacks, f"Error de conexión: {e}")
             break
 
         reviews = response.get("reviews", [])
         nuevo_cursor = response.get("cursor")
 
         if not reviews:
-            print(f"La API no devolvió más reviews de tipo '{review_type}'. Fin de la paginación.")
+            _log(callbacks, f"La API no devolvió más reviews de tipo '{review_type}'. Fin de la paginación.")
             break
 
         if nuevo_cursor == cursor:
             # esto puede pasar si ya llegamos al final de todas las reviews
             if len(reviews) == 0:
-                 print("El cursor no cambió (sin más reviews).")
+                 _log(callbacks, "El cursor no cambió (sin más reviews).")
             else:
                  # pausa para evitar sobrecargar la API si el cursor se atasca
                  import time; time.sleep(1)
@@ -85,14 +101,15 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, idioma: 
             resultado.append(item)
             seen_ids.add(review_id)
 
-    print(f"Reviews encontradas para {review_type}: {len(resultado)}")
+    _log(callbacks, f"Reviews encontradas para {review_type}: {len(resultado)}")
     return resultado
 
 def obtener_reviews(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT,
-        neg_limit: int = MAX_FETCH_LIMIT,
-        idioma: str = "spanish"
+        pos_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
+        neg_limit: int = MAX_FETCH_LIMIT, # Usamos el límite alto
+        idioma: str = "spanish",
+        callbacks = None
     ) -> Dataset:
 
     if isinstance(app_ids, int):
@@ -100,16 +117,20 @@ def obtener_reviews(
 
     dataset: Dataset = []
 
-    for app_id in app_ids:
-        print(f"\n--- Procesando Juego ID: {app_id} ---")
+    for (i, app_id) in enumerate(app_ids):
+        _check_stop(callbacks)
 
-        positivas = obtener_reviews_por_tipo(app_id, "positive", pos_limit, idioma)
-        negativas = obtener_reviews_por_tipo(app_id, "negative", neg_limit, idioma)
+        _log(callbacks, f"\n--- Procesando Juego ID: {app_id} ---")
+
+        positivas = obtener_reviews_por_tipo(app_id, "positive", pos_limit, idioma, callbacks=callbacks)
+        negativas = obtener_reviews_por_tipo(app_id, "negative", neg_limit, idioma, callbacks=callbacks)
 
         total_juego = positivas + negativas
         dataset.extend(total_juego)
 
-        print(f"Total agregado para este juego: {len(total_juego)} (Pos: {len(positivas)}, Neg: {len(negativas)})")
+        _progreso(callbacks, (i/len(app_ids)) * 100)
+
+        _log(callbacks, f"Total agregado para este juego: {len(total_juego)} (Pos: {len(positivas)}, Neg: {len(negativas)})")
 
     return dataset
 
@@ -120,7 +141,8 @@ def obtener_reviews_cache(
         neg_limit: int = MAX_FETCH_LIMIT,
         idioma: str = "spanish",
         archivo: str = "steam_reviews.json",
-        max_diff: int = MAX_DIFF
+        max_diff: int = MAX_DIFF,
+        callbacks = None
     ) -> Dataset:
     """
     Si el archivo existe, lo carga.
@@ -132,10 +154,10 @@ def obtener_reviews_cache(
         with open(archivo, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    print("No existe el dataset, descargando desde Steam (Maximizando)...")
+    _log(callbacks, "No existe el dataset, descargando desde Steam (Maximizando)...")
 
     # descarga el dataset
-    dataset_crudo = obtener_reviews(app_ids, MAX_FETCH_LIMIT, MAX_FETCH_LIMIT, idioma)
+    dataset_crudo = obtener_reviews(app_ids, pos_limit, neg_limit, idioma, callbacks=callbacks)
 
     # separar positivas y negativas
     positivas = [r for r in dataset_crudo if r["voted_up"]]
@@ -144,14 +166,14 @@ def obtener_reviews_cache(
     len_pos = len(positivas)
     len_neg = len(negativas)
 
-    print(f"\n--- Balanceo de Clases ---")
-    print(f"Datos crudos: Positivas: {len_pos}, Negativas: {len_neg}")
+    _log(callbacks, f"\n--- Balanceo de Clases ---")
+    _log(callbacks, f"Datos crudos: Positivas: {len_pos}, Negativas: {len_neg}")
 
     # aplicar balanceo si es necesario
     diff = abs(len_pos - len_neg)
 
     if diff > max_diff:
-        print(f"Diferencia ({diff}) excede el límite de {max_diff}. Aplicando downsampling.")
+        _log(callbacks, f"Diferencia ({diff}) excede el límite de {max_diff}. Aplicando downsampling.")
 
         # la clase menor define el límite base
         min_len = min(len_pos, len_neg)
@@ -165,24 +187,22 @@ def obtener_reviews_cache(
             # reducir negativas
             negativas = random.sample(negativas, nuevo_limite)
 
-        print(f"Tamaños ajustados: Positivas: {len(positivas)}, Negativas: {len(negativas)}")
+        _log(callbacks, f"Tamaños ajustados: Positivas: {len(positivas)}, Negativas: {len(negativas)}")
     else:
-        print(f"Diferencia ({diff}) está dentro del límite de {max_diff}. No se requiere downsampling.")
+        _log(callbacks, f"Diferencia ({diff}) está dentro del límite de {max_diff}. No se requiere downsampling.")
 
 
     # recombinar de nuevo
     dataset_balanceado = positivas + negativas
     random.shuffle(dataset_balanceado)
 
+    _progreso(callbacks, 100)
+
     # guardar
     len_pos_final = len(positivas)
     len_neg_final = len(negativas)
-    print(f"Dataset final: Positivas: {len_pos_final}, Negativas: {len_neg_final}")
-    print(f"Cantidad total de reviews en el dataset final: {len(dataset_balanceado)}")
-
-    print(f"Guardando dataset en {archivo}...")
-    with open(archivo, "w", encoding="utf-8") as f:
-        json.dump(dataset_balanceado, f, ensure_ascii=False, indent=2)
+    _log(callbacks, f"Dataset final: Positivas: {len_pos_final}, Negativas: {len_neg_final}")
+    _log(callbacks, f"Cantidad total de reviews en el dataset final: {len(dataset_balanceado)}")
 
     return dataset_balanceado
 

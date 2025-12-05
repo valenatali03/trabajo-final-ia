@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (QMainWindow, QLineEdit, QPushButton, QFormLayout, 
                                QVBoxLayout, QLabel, QWidget, QMessageBox, QProgressBar)
 from PySide6.QtCore import Signal, Qt, QThread
-from steam_apps import SteamWorker
+from workers import SteamWorker
 from dataset_manager import DatasetManager
 
 
