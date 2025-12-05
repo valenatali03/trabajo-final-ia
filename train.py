@@ -48,24 +48,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
     num_labels=2
 )
 
-# métricas
-precision = load("precision")
-recall = load("recall")
-f1 = load("f1")
-accuracy = load("accuracy")
-
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = np.argmax(logits, axis=-1)
-
-    return {
-        "accuracy": accuracy.compute(predictions=preds, references=labels)["accuracy"],
-        "precision": precision.compute(predictions=preds, references=labels, average="binary")["precision"],
-        "recall": recall.compute(predictions=preds, references=labels, average="binary")["recall"],
-        "f1": f1.compute(predictions=preds, references=labels, average="binary")["f1"],
-    }
-
-# configuración del entrenamiento
+# 7. Configuración del entrenamiento
 training_args = TrainingArguments(
     output_dir="./modelo_distilbert",
     per_device_train_batch_size=16,
