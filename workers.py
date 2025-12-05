@@ -1,11 +1,14 @@
 import requests
 import time
+import dataset
 from PySide6.QtCore import QObject, Signal
 from structs import SteamApps
+
 
 class WorkerSignals(QObject):
     finished = Signal()
     error = Signal(str)
+    log = Signal(str)
     progress = Signal(int)
     data_ready = Signal(list)
 
@@ -68,4 +71,45 @@ class SteamWorker(QObject):
             self.signals.error.emit(f"Error inesperado: {str(e)}")
         finally:
             self.signals.finished.emit()
+
+class DatasetWorker(QObject):
+    def __init__(self, app_ids, pos_limit, neg_limit, filename, max_diff):
+        super().__init__()
+        self.signals = WorkerSignals()
+        self.app_ids = app_ids
+        self.pos_limit = pos_limit
+        self.neg_limit = neg_limit
+        self.filename = filename
+        self.max_diff = max_diff
+        self.is_running = True
+
+    def run(self):
+        callbacks = {
+            'check_stop': lambda: not self.is_running,
+            'progress': self.signals.progress.emit,
+            'error': self.signals.error.emit,
+            'log': self.signals.log.emit
+        }
+
+        try:
+            
+            data = dataset.obtener_reviews_cache(
+                app_ids=self.app_ids,
+                pos_limit=self.pos_limit,
+                neg_limit=self.neg_limit,
+                archivo=self.filename,
+                max_diff=self.max_diff,
+                callbacks=callbacks
+            )
+
+            if self.is_running and data:
+                self.signals.data_ready.emit(data)
+
+        except Exception as e:
+            self.signals.error.emit(str(e))
+        finally:
+            self.signals.finished.emit()
+
+    def stop(self):
+        self.is_running = False
 
