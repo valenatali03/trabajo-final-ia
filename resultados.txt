@@ -1,0 +1,26 @@
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-multilingual-cased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Downloading builder script: 7.56kB [00:00, ?B/s]
+Downloading builder script: 7.38kB [00:00, 473kB/s]
+Downloading builder script: 4.20kB [00:00, 269kB/s]
+  0%|                                                                                           | 0/96 [00:00<?, ?it/s]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.6824, 'grad_norm': 1.0138136148452759, 'learning_rate': 2.6875000000000003e-05, 'epoch': 0.31}
+{'loss': 0.6246, 'grad_norm': 1.4620277881622314, 'learning_rate': 2.3749999999999998e-05, 'epoch': 0.62}
+{'loss': 0.5445, 'grad_norm': 2.1936187744140625, 'learning_rate': 2.0625e-05, 'epoch': 0.94}
+{'eval_loss': 0.48102521896362305, 'eval_accuracy': 0.7734375, 'eval_precision': 0.8089887640449438, 'eval_recall': 0.8571428571428571, 'eval_f1': 0.8323699421965318, 'eval_runtime': 5.0625, 'eval_samples_per_second': 25.284, 'eval_steps_per_second': 1.58, 'epoch': 1.0}
+ 33%|███████████████████████████▎                                                      | 32/96 [01:35<02:52,  2.69s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.5179, 'grad_norm': 6.819261074066162, 'learning_rate': 1.7500000000000002e-05, 'epoch': 1.25}
+{'loss': 0.3271, 'grad_norm': 4.2063727378845215, 'learning_rate': 1.4375e-05, 'epoch': 1.56}
+{'loss': 0.3334, 'grad_norm': 5.493866443634033, 'learning_rate': 1.125e-05, 'epoch': 1.88}
+{'eval_loss': 0.38301563262939453, 'eval_accuracy': 0.84375, 'eval_precision': 0.9102564102564102, 'eval_recall': 0.8452380952380952, 'eval_f1': 0.8765432098765432, 'eval_runtime': 4.7187, 'eval_samples_per_second': 27.126, 'eval_steps_per_second': 1.695, 'epoch': 2.0}
+ 67%|██████████████████████████████████████████████████████▋                           | 64/96 [03:12<01:24,  2.64s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.3806, 'grad_norm': 8.350549697875977, 'learning_rate': 8.125e-06, 'epoch': 2.19}
+{'loss': 0.2362, 'grad_norm': 6.25025749206543, 'learning_rate': 4.9999999999999996e-06, 'epoch': 2.5}
+{'loss': 0.2111, 'grad_norm': 5.276131629943848, 'learning_rate': 1.875e-06, 'epoch': 2.81}
+{'eval_loss': 0.33706140518188477, 'eval_accuracy': 0.84375, 'eval_precision': 0.8902439024390244, 'eval_recall': 0.8690476190476191, 'eval_f1': 0.8795180722891566, 'eval_runtime': 4.9219, 'eval_samples_per_second': 26.006, 'eval_steps_per_second': 1.625, 'epoch': 3.0}
+{'train_runtime': 312.7524, 'train_samples_per_second': 4.892, 'train_steps_per_second': 0.307, 'train_loss': 0.4116287479797999, 'epoch': 3.0}
+100%|██████████████████████████████████████████████████████████████████████████████████| 96/96 [05:27<00:00,  3.41s/it]
+Entrenamiento completado y modelo guardado.
