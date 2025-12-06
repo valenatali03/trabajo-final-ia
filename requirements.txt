@@ -7,3 +7,10 @@ PySide6_Essentials==6.10.1
 requests==2.32.5
 shiboken6==6.10.1
 urllib3==2.5.0
+transformers
+datasets
+evaluate
+numpy
+torch
+scikit-learn
+accelerate

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QSpinBox, QFormLayout
 import clean
-from const import MAX_WORDS, MIN_WORDS
+from const import MAX_WORDS, MIN_WORDS, DATASET_NAME
 class CleanTab(QWidget):
 
     def __init__(self):
@@ -9,6 +9,7 @@ class CleanTab(QWidget):
         layout = QFormLayout()
 
         self.line_edit_dataset_file = QLineEdit(placeholderText="steam_review.json")
+        self.line_edit_dataset_file.setText(DATASET_NAME)
         self.spinbox_min_words = QSpinBox()
         self.spinbox_min_words.setMinimum(MIN_WORDS)
         self.spinbox_min_words.valueChanged.connect(lambda: self.spinbox_max_words.setMinimum(self.spinbox_min_words.value()))
