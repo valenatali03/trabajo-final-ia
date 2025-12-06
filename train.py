@@ -1,6 +1,7 @@
 import os
 os.environ["WANDB_DISABLED"] = "true"  # Desactiva W&B
 from datasets import load_dataset
+from const import DATASET_NAME, MODEL_DEFAULT_DIR_PATH
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 import numpy as np
 from evaluate import load
@@ -11,7 +12,7 @@ def convert_label(example):
     example["label"] = int(example["label"])
     return example
 
-def entrenar(file: str, test_size: float, epochs: int, learning_rate: float, output_dir="./modelo_distilbert"):
+def entrenar(file: str, test_size: float, epochs: int, learning_rate: float, output_dir=MODEL_DEFAULT_DIR_PATH):
 # cargar dataset desde el JSON
     if not(file.endswith(".json")):
         print("El archivo no es de tipo json")
@@ -71,7 +72,7 @@ def entrenar(file: str, test_size: float, epochs: int, learning_rate: float, out
 
 # configuración del entrenamiento
     training_args = TrainingArguments(
-        output_dir="./modelo_distilbert",
+        output_dir=MODEL_DEFAULT_DIR_PATH,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         num_train_epochs=epochs,
@@ -102,4 +103,4 @@ def entrenar(file: str, test_size: float, epochs: int, learning_rate: float, out
     print("Entrenamiento completado y modelo guardado.")
 
 if __name__ == "__main__":
-    entrenar(file="steam_reviews.json", test_size=0.2, epochs=3, learning_rate=3e-5)
+    entrenar(file=DATASET_NAME, test_size=0.2, epochs=3, learning_rate=3e-5)

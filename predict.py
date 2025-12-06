@@ -1,10 +1,9 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
+from const import MODEL_DEFAULT_DIR_PATH
 
-MODEL_DIR = "modelo_distilbert"   # carpeta donde guardaste el modelo
-
-def load_model(model_dir: str = MODEL_DIR):
+def load_model(model_dir: str = MODEL_DEFAULT_DIR_PATH):
     print(f"Cargando modelo desde: {model_dir}")
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)

@@ -1,11 +1,12 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QFormLayout, QLabel
 from predict import load_model, predict
+from const import MODEL_DEFAULT_DIR_PATH
 class TestTab(QWidget):
 
     def __init__(self):
         super().__init__()
         self.tokenizer, self.model = load_model()
-        self.model_dir = "./modelo_distilbert"
+        self.model_dir = MODEL_DEFAULT_DIR_PATH
         self.model_state = QLabel()
         self.update_model(self.model_dir)
         layout = QFormLayout()

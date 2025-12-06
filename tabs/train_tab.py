@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QSpinBox, QFormLayout, QDoubleSpinBox, QLabel, QApplication
 from PySide6.QtCore import Signal
-from const import LEARNING_RATE, TEST_SIZE, EPOCHS, DATASET_NAME
+from const import LEARNING_RATE, TEST_SIZE, EPOCHS, DATASET_NAME, MODEL_DEFAULT_DIR_NAME
 from datetime import datetime
 import train
 class TrainTab(QWidget):
@@ -34,7 +34,7 @@ class TrainTab(QWidget):
     def iniciar_entrenamiento(self):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = f"./modelo_distilbert_{timestamp}"
+        output_dir = f"./{MODEL_DEFAULT_DIR_NAME}_{timestamp}"
         dataset = self.line_edit_dataset_file.text()
         test_size = self.test_size.value()
         epochs = self.epochs.value()

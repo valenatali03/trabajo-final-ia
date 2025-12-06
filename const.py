@@ -5,3 +5,5 @@ LEARNING_RATE =  0.00003
 TEST_SIZE = 0.2
 EPOCHS = 3
 DATASET_NAME = "steam_reviews.json"
+MODEL_DEFAULT_DIR_NAME = "modelo_distilbert"
+MODEL_DEFAULT_DIR_PATH = "./modelo_distilbert"
