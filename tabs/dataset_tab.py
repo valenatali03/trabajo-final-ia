@@ -17,12 +17,12 @@ class DatasetTab(QWidget):
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.NoFrame) 
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame) 
         self.scroll_area.setFixedHeight(150)
 
         self.container_items = QWidget()
         self.layout_items = QVBoxLayout(self.container_items)
-        self.layout_items.setAlignment(Qt.AlignTop)
+        self.layout_items.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.layout_items.setContentsMargins(0,0,0,0)
         
         self.scroll_area.setWidget(self.container_items)
@@ -48,7 +48,7 @@ class DatasetTab(QWidget):
         self.spinbox_neg_limit.setMaximum(MAX_FETCH_LIMIT)
 
         form_layout = QFormLayout()
-        form_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         form_layout.setSpacing(10)
         form_layout.addRow("Nombre del dataset:", self.line_edit_filename)
         form_layout.addRow("Límite positivas:", self.spinbox_pos_limit)
@@ -65,7 +65,7 @@ class DatasetTab(QWidget):
         self.progress_bar.setVisible(False)
 
         self.status_label = QLabel("")
-        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet("color: gray; font-style: italic;")
         self.status_label.setVisible(False)
 
@@ -78,8 +78,8 @@ class DatasetTab(QWidget):
         layout.addWidget(self.btn_agregar)
         
         line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
         layout.addWidget(line)
 
         layout.addLayout(form_layout)
@@ -100,7 +100,8 @@ class DatasetTab(QWidget):
         seleccionados = set()
         for i in range(self.layout_items.count()):
             fila = self.layout_items.itemAt(i).widget()
-            if fila:
+            
+            if isinstance(fila, FilaJuego):
                 texto = fila.obtener_texto()
                 if texto:
                     seleccionados.add(texto)
@@ -123,7 +124,7 @@ class DatasetTab(QWidget):
         try:
             for i in range(self.layout_items.count()):
                 fila = self.layout_items.itemAt(i).widget()
-                if fila:
+                if isinstance(fila, FilaJuego):
                     texto = fila.obtener_texto()
                     fila.setEnabled(False)
                     fila.btn_eliminar.setEnabled(False)
@@ -157,11 +158,11 @@ class DatasetTab(QWidget):
             self.status_label.setText("Iniciando...")
             self.status_label.setVisible(True)
 
-            self.thread = QThread()
+            self.worker_thread = QThread()
             self.worker = DatasetWorker(app_ids, pos_limit, neg_limit, filename, max_diff)
-            self.worker.moveToThread(self.thread)
+            self.worker.moveToThread(self.worker_thread)
 
-            self.thread.started.connect(self.worker.run)
+            self.worker_thread.started.connect(self.worker.run)
 
             self.worker.signals.error.connect(self.mostrar_error)
             self.worker.signals.data_ready.connect(self.procesar_datos_exitosos)
@@ -170,7 +171,7 @@ class DatasetTab(QWidget):
             self.worker.signals.finished.connect(self.limpiar_thread)
             self.worker.signals.finished.connect(self.restaurar_ui)
 
-            self.thread.start()
+            self.worker_thread.start()
             
         except (ValueError, IndexError) as e:
             print(f"Error al procesar: {e}")
@@ -188,15 +189,15 @@ class DatasetTab(QWidget):
         self.progress_bar.setValue(valor)
 
     def limpiar_thread(self):
-        self.thread.quit()
-        self.thread.wait()
-        self.thread.deleteLater()
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        self.worker_thread.deleteLater()
         self.worker.deleteLater()
 
     def restaurar_ui(self):
         for i in range(self.layout_items.count()):
                 fila = self.layout_items.itemAt(i).widget()
-                if fila:
+                if isinstance(fila, FilaJuego):
                     fila.setEnabled(True)
                     fila.btn_eliminar.setEnabled(True)
 
@@ -247,8 +248,8 @@ class FilaJuego(QWidget):
         self.line_edit_appid.setFixedWidth(250) 
 
         self.completer = QCompleter(self.modelo_juegos)
-        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.completer.setFilterMode(Qt.MatchContains)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.completer.setFilterMode(Qt.MatchFlag.MatchContains)
         self.line_edit_appid.setCompleter(self.completer)
 
         self.btn_eliminar = QPushButton("X")

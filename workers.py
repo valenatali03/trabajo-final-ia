@@ -1,9 +1,9 @@
 import requests
 import time
 import dataset
+from typing import List, Dict, Any, Optional, cast
 from PySide6.QtCore import QObject, Signal
-from structs import SteamApps
-
+from structs import SteamApps, Dataset
 
 class WorkerSignals(QObject):
     finished = Signal()
@@ -16,13 +16,13 @@ class SteamWorker(QObject):
     def __init__(self, api_key: str):
         super().__init__()
         self.signals = WorkerSignals()
-        self.is_running : bool = True
-        self.url : str = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
-        self.todas_las_apps : SteamApps = []
-        self.last_appid : int = 0
-        self.api_key : str = api_key
+        self.is_running: bool = True
+        self.url: str = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
+        self.todas_las_apps: SteamApps = []
+        self.last_appid: int = 0
+        self.api_key: str = api_key
 
-    def run(self):
+    def run(self) -> None:
         if not self.api_key:
             self.signals.error.emit("Por favor, coloca una API Key válida.")
             self.signals.finished.emit()
@@ -51,7 +51,10 @@ class SteamWorker(QObject):
 
                 if 'response' in data and 'apps' in data['response']:
                     apps = data['response']['apps']
-                    apps_optimizado = [{'appid': app['appid'], 'name': app['name']} for app in apps]
+                    
+                    apps_optimizado = cast(SteamApps, [
+                        {'appid': app['appid'], 'name': app['name']} for app in apps
+                    ])
                     
                     self.todas_las_apps.extend(apps_optimizado)
                     
@@ -73,7 +76,7 @@ class SteamWorker(QObject):
             self.signals.finished.emit()
 
 class DatasetWorker(QObject):
-    def __init__(self, app_ids, pos_limit, neg_limit, filename, max_diff):
+    def __init__(self, app_ids: List[int], pos_limit: int, neg_limit: int, filename: str, max_diff: int):
         super().__init__()
         self.signals = WorkerSignals()
         self.app_ids = app_ids
@@ -83,7 +86,7 @@ class DatasetWorker(QObject):
         self.max_diff = max_diff
         self.is_running = True
 
-    def run(self):
+    def run(self) -> None:
         callbacks = {
             'check_stop': lambda: not self.is_running,
             'progress': self.signals.progress.emit,
@@ -92,8 +95,7 @@ class DatasetWorker(QObject):
         }
 
         try:
-            
-            data = dataset.obtener_reviews_cache(
+            data: Dataset = dataset.obtener_reviews_cache(
                 app_ids=self.app_ids,
                 pos_limit=self.pos_limit,
                 neg_limit=self.neg_limit,
@@ -110,6 +112,5 @@ class DatasetWorker(QObject):
         finally:
             self.signals.finished.emit()
 
-    def stop(self):
+    def stop(self) -> None:
         self.is_running = False
-

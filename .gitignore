@@ -9,7 +9,6 @@ __pycache__/
 # Distribution / packaging
 .Python
 modelo_distilbert*
-steam_apps_cache.json
 build/
 develop-eggs/
 dist/

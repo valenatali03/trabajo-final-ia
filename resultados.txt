@@ -24,3 +24,91 @@ Downloading builder script: 4.20kB [00:00, 269kB/s]
 {'train_runtime': 312.7524, 'train_samples_per_second': 4.892, 'train_steps_per_second': 0.307, 'train_loss': 0.4116287479797999, 'epoch': 3.0}
 100%|██████████████████████████████████████████████████████████████████████████████████| 96/96 [05:27<00:00,  3.41s/it]
 Entrenamiento completado y modelo guardado.
+
+
+
+
+
+
+
+
+
+
+
+# configuración del entrenamiento
+training_args = TrainingArguments(
+    output_dir="./modelo_distilbert",
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
+    num_train_epochs=5,
+    learning_rate=3e-5,
+    weight_decay=0.1,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    metric_for_best_model="loss",
+    logging_steps=10,
+    report_to="none"
+)
+
+
+
+
+
+
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-multilingual-cased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Downloading builder script: 7.56kB [00:00, 485kB/s]
+Downloading builder script: 7.38kB [00:00, 473kB/s]
+  0%|                                                                                          | 0/160 [00:00<?, ?it/s]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.6786, 'grad_norm': 2.5267035961151123, 'learning_rate': 2.8125e-05, 'epoch': 0.31}
+{'loss': 0.6455, 'grad_norm': 2.1377511024475098, 'learning_rate': 2.625e-05, 'epoch': 0.62}
+{'loss': 0.5641, 'grad_norm': 2.5212676525115967, 'learning_rate': 2.4375e-05, 'epoch': 0.94}
+{'eval_loss': 0.48623496294021606, 'eval_accuracy': 0.7890625, 'eval_precision': 0.8064516129032258, 'eval_recall': 0.8928571428571429, 'eval_f1': 0.847457627118644, 'eval_runtime': 4.8345, 'eval_samples_per_second': 26.476, 'eval_steps_per_second': 1.655, 'epoch': 1.0}
+ 20%|████████████████▏                                                                | 32/160 [01:34<05:55,  2.78s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.4469, 'grad_norm': 4.845472812652588, 'learning_rate': 2.25e-05, 'epoch': 1.25}
+{'loss': 0.3676, 'grad_norm': 6.606159210205078, 'learning_rate': 2.0625e-05, 'epoch': 1.56}
+{'loss': 0.3837, 'grad_norm': 6.334262371063232, 'learning_rate': 1.8750000000000002e-05, 'epoch': 1.88}
+{'eval_loss': 0.43863579630851746, 'eval_accuracy': 0.828125, 'eval_precision': 0.81, 'eval_recall': 0.9642857142857143, 'eval_f1': 0.8804347826086957, 'eval_runtime': 4.6875, 'eval_samples_per_second': 27.307, 'eval_steps_per_second': 1.707, 'epoch': 2.0}
+ 40%|████████████████████████████████▍                                                | 64/160 [03:12<04:25,  2.77s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.3191, 'grad_norm': 3.5148556232452393, 'learning_rate': 1.6875e-05, 'epoch': 2.19}
+{'loss': 0.2412, 'grad_norm': 10.071578979492188, 'learning_rate': 1.5e-05, 'epoch': 2.5}
+{'loss': 0.1975, 'grad_norm': 7.428193092346191, 'learning_rate': 1.3125e-05, 'epoch': 2.81}
+{'eval_loss': 0.5709707736968994, 'eval_accuracy': 0.8046875, 'eval_precision': 0.7757009345794392, 'eval_recall': 0.9880952380952381, 'eval_f1': 0.8691099476439791, 'eval_runtime': 4.5469, 'eval_samples_per_second': 28.151, 'eval_steps_per_second': 1.759, 'epoch': 3.0}
+ 60%|████████████████████████████████████████████████▌                                | 96/160 [04:48<02:51,  2.68s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.2279, 'grad_norm': 3.6412193775177, 'learning_rate': 1.125e-05, 'epoch': 3.12}
+{'loss': 0.1312, 'grad_norm': 17.363388061523438, 'learning_rate': 9.375000000000001e-06, 'epoch': 3.44}
+{'loss': 0.1286, 'grad_norm': 10.357237815856934, 'learning_rate': 7.5e-06, 'epoch': 3.75}
+{'eval_loss': 0.3872068226337433, 'eval_accuracy': 0.875, 'eval_precision': 0.8695652173913043, 'eval_recall': 0.9523809523809523, 'eval_f1': 0.9090909090909091, 'eval_runtime': 4.7031, 'eval_samples_per_second': 27.216, 'eval_steps_per_second': 1.701, 'epoch': 4.0}
+ 80%|████████████████████████████████████████████████████████████████                | 128/160 [06:32<01:23,  2.61s/it]C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\torch\utils\data\dataloader.py:668: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+{'loss': 0.0942, 'grad_norm': 0.8423620462417603, 'learning_rate': 5.625e-06, 'epoch': 4.06}
+{'loss': 0.0544, 'grad_norm': 11.544500350952148, 'learning_rate': 3.75e-06, 'epoch': 4.38}
+{'loss': 0.0905, 'grad_norm': 12.236712455749512, 'learning_rate': 1.875e-06, 'epoch': 4.69}
+{'loss': 0.0706, 'grad_norm': 1.222206950187683, 'learning_rate': 0.0, 'epoch': 5.0}
+{'eval_loss': 0.4726353883743286, 'eval_accuracy': 0.8671875, 'eval_precision': 0.845360824742268, 'eval_recall': 0.9761904761904762, 'eval_f1': 0.9060773480662984, 'eval_runtime': 4.8593, 'eval_samples_per_second': 26.341, 'eval_steps_per_second': 1.646, 'epoch': 5.0}
+100%|████████████████████████████████████████████████████████████████████████████████| 160/160 [08:20<00:00,  2.55s/it]Traceback (most recent call last):
+  File "C:\Users\facun\trabajo-final-ia\train.py", line 93, in <module>
+    trainer.train()
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 1885, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 2311, in _inner_training_loop
+    self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval)
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 2732, in _maybe_log_save_evaluate
+    self._save_checkpoint(model, trial, metrics=metrics)
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 2811, in _save_checkpoint
+    self.save_model(output_dir, _internal_call=True)
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 3355, in save_model
+    self._save(output_dir)
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\trainer.py", line 3432, in _save
+    self.model.save_pretrained(
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\transformers\modeling_utils.py", line 2612, in save_pretrained
+    safe_save_file(shard, os.path.join(save_directory, shard_file), metadata={"format": "pt"})
+  File "C:\Users\facun\AppData\Roaming\Python\Python312\site-packages\safetensors\torch.py", line 307, in save_file
+    serialize_file(_flatten(tensors), filename, metadata=metadata)
+safetensors_rust.SafetensorError: Error while serializing: I/O error: Espacio en disco insuficiente. (os error 112)
+100%|██████████| 160/160 [08:20<00:00,  3.13s/it]

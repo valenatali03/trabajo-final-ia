@@ -1,12 +1,13 @@
 import os
 import json
-from structs import SteamApps
+from typing import List, Union, Any
+from structs import SteamApps, Dataset
 
-class DatasetManager():
-    def __init__(self, archivo_json):
+class DatasetManager:
+    def __init__(self, archivo_json: str):
         self.archivo_json = archivo_json
 
-    def guardar_datos(self, datos):
+    def guardar_datos(self, datos: Union[SteamApps, Dataset, List[Any]]) -> None:
         with open(self.archivo_json, 'w', encoding='utf-8') as f:
             json.dump(datos, f, indent=4)
 
@@ -16,6 +17,6 @@ class DatasetManager():
             return []
 
         with open(self.archivo_json, 'r', encoding='utf-8') as archivo:
-            datos:SteamApps = json.load(archivo)
+            datos: SteamApps = json.load(archivo)
         
         return datos
