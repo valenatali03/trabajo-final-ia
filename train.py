@@ -1,13 +1,13 @@
 import os
-os.environ["WANDB_DISABLED"] = "true"  # Desactiva W&B
 from datasets import load_dataset
 from const import DATASET_NAME, MODEL_DEFAULT_DIR_PATH
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 import numpy as np
 from evaluate import load
 
+os.environ["WANDB_DISABLED"] = "true"  # Desactiva W&B
 
-# convertir True/False -> 1/0
+# convertir true/false -> 1/0
 def convert_label(example):
     example["label"] = int(example["label"])
     return example
@@ -42,12 +42,12 @@ def entrenar(file: str, test_size: float, epochs: int, learning_rate: float, out
 
     tokenized_dataset = dataset.map(tokenize, batched=True)
 
-    # separar train/validation
+    # separar dataset en train/validation
     tokenized_dataset = tokenized_dataset["train"].train_test_split(test_size=test_size)
     train_ds = tokenized_dataset["train"]
     val_ds = tokenized_dataset["test"]
 
-    # modelo pre-entrenado
+    # cargar modelo pre-entrenado
     model = AutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-multilingual-cased",
         num_labels=2

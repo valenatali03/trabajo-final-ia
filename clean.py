@@ -5,12 +5,8 @@ from const import MAX_WORDS, MIN_WORDS
 
 ARCHIVO_DATASET = "steam_reviews.json"
 
+# filtra el dataset para eliminar reviews que contienen menos de 'MIN_WORDS' palabras ó mas de 'MAX_WORDS' palabras
 def limpiar_reviews_por_longitud(dataset: Dataset, min_words, max_words) -> Dataset:
-    """
-    Filtra el dataset para eliminar reviews que contienen:
-    1. Solo una palabra.
-    2. Más de MAX_WORDS (25) palabras.
-    """
     reviews_iniciales = len(dataset)
     reviews_conservadas: Dataset = []
     reviews_eliminadas_min = 0
@@ -19,6 +15,8 @@ def limpiar_reviews_por_longitud(dataset: Dataset, min_words, max_words) -> Data
     print(f"Iniciando limpieza. Total de reviews iniciales: {reviews_iniciales}")
     print(f"Criterio: Conservar reviews entre {min_words} y {max_words} palabras.")
 
+    # chequear que cada review tenga entre MIN_WORDS y MAX_WORDS palabras,
+    # sino se descarta
     for review_item in dataset:
         review_text = review_item["review"].strip()
 
@@ -32,8 +30,7 @@ def limpiar_reviews_por_longitud(dataset: Dataset, min_words, max_words) -> Data
             reviews_eliminadas_max += 1
             continue
 
-        # si pasa ambos filtros, se conserva
-        reviews_conservadas.append(review_item)
+        reviews_conservadas.append(review_item) # se conserva la palabra
 
     reviews_eliminadas_total = reviews_eliminadas_min + reviews_eliminadas_max
 
@@ -45,12 +42,12 @@ def limpiar_reviews_por_longitud(dataset: Dataset, min_words, max_words) -> Data
 
     return reviews_conservadas
 
-# Carga el dataset, lo limpia y lo guarda.
+# carga el dataset, lo limpia y lo guarda.
 def ejecutar_limpieza(min_words, max_words):
 
     if not os.path.exists(ARCHIVO_DATASET):
         print(f"Error: No se encontró el archivo de dataset: {ARCHIVO_DATASET}")
-        print("Por favor, ejecuta 'dataset.py' primero para crear el archivo.")
+        print("Ejecuta 'dataset.py' primero para crear el archivo.")
         return
 
     # cargar el dataset
@@ -61,7 +58,7 @@ def ejecutar_limpieza(min_words, max_words):
     # limpiar el dataset
     dataset_limpio = limpiar_reviews_por_longitud(dataset_crudo, min_words, max_words)
 
-    # guardar el dataset limpio (sobrescribe el original)
+    # guardar el dataset limpio (sobrescribe el archivo json original)
     print(f"\nGuardando dataset limpio en {ARCHIVO_DATASET}...")
     with open(ARCHIVO_DATASET, "w", encoding="utf-8") as f:
         json.dump(dataset_limpio, f, ensure_ascii=False, indent=2)
