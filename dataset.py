@@ -5,8 +5,8 @@ from typing import List, Union, Set, Optional, Dict, Callable, Any
 from structs import Review, Dataset
 import random
 
-MAX_FETCH_LIMIT = 1000 
-MAX_DIFF = 50          
+MAX_FETCH_LIMIT = 1000 # límite máximo de reviews de cada tipo
+MAX_DIFF = 50          # máxima diferencia permitida entre cant de reviews positivas y negativas
 
 Callbacks = Optional[Dict[str, Callable[..., Any]]]
 
@@ -22,14 +22,15 @@ def _check_stop(callbacks: Callbacks) -> None:
     if callbacks and 'check_stop' in callbacks:
         if callbacks['check_stop']():
             raise InterruptedError("Detenido por el usuario")
-        
+
 def _log(callbacks: Callbacks, msg: str) -> None:
     if callbacks and 'log' in callbacks:
         callbacks['log'](msg)
 
-def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int, 
+# busca las reviews dependiendo del tipo de valoración de la review
+def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int,
                              idioma: str, callbacks: Callbacks = None) -> Dataset:
-    
+
     resultado: Dataset = []
     seen_ids: Set[str] = set()
     cursor = "*"
@@ -53,6 +54,7 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int,
         }
 
         try:
+            # tiene un control de tiempo para evitar que se bloquee si la API está llena
             response = requests.get(url, params=params, timeout=10).json()
         except Exception as e:
             _error(callbacks, f"Error de conexión: {e}")
@@ -66,9 +68,11 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int,
             break
 
         if nuevo_cursor == cursor:
+            # esto puede pasar si ya llegamos al final de todas las reviews
             if len(reviews) == 0:
                  _log(callbacks, "El cursor no cambió (sin más reviews).")
             else:
+                 # pausa para evitar sobrecargar la API si el cursor se atasca
                  import time; time.sleep(1)
             break
 
@@ -100,10 +104,11 @@ def obtener_reviews_por_tipo(app_id: int, review_type: str, limit: int,
     _log(callbacks, f"Reviews encontradas para {review_type}: {len(resultado)}")
     return resultado
 
+# obtiene las max cant establecida de cada tipo de review por cada juego pasado como parámetro
 def obtener_reviews(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT, 
-        neg_limit: int = MAX_FETCH_LIMIT, 
+        pos_limit: int = MAX_FETCH_LIMIT,
+        neg_limit: int = MAX_FETCH_LIMIT,
         idioma: str = "spanish",
         callbacks: Callbacks = None
     ) -> Dataset:
@@ -130,15 +135,19 @@ def obtener_reviews(
 
     return dataset_list
 
+# función de cache con balanceo
 def obtener_reviews_cache(
         app_ids: Union[int, List[int]],
-        pos_limit: int = MAX_FETCH_LIMIT, 
+        pos_limit: int = MAX_FETCH_LIMIT,
         neg_limit: int = MAX_FETCH_LIMIT,
         idioma: str = "spanish",
         archivo: str = "steam_reviews.json",
         max_diff: int = MAX_DIFF,
         callbacks: Callbacks = None
     ) -> Dataset:
+
+    # Si el archivo existe, lo carga.
+    # Si no existe, descarga el dataset (maximizando), lo balancea con max_diff, y lo guarda.
 
     if os.path.exists(archivo):
         print(f"Cargando dataset desde {archivo}...")
@@ -158,24 +167,25 @@ def obtener_reviews_cache(
     _log(callbacks, f"\n--- Balanceo de Clases ---")
     _log(callbacks, f"Datos crudos: Positivas: {len_pos}, Negativas: {len_neg}")
 
+    # aplicar balanceo si es necesario:
     diff = abs(len_pos - len_neg)
 
     if diff > max_diff:
         _log(callbacks, f"Diferencia ({diff}) excede el límite de {max_diff}. Aplicando downsampling.")
-        
-        min_len = min(len_pos, len_neg)
+
+        min_len = min(len_pos, len_neg) # la clase menor define el límite base
         nuevo_limite = min_len + max_diff
 
         if len_pos > len_neg:
-            positivas = random.sample(positivas, nuevo_limite)
+            positivas = random.sample(positivas, nuevo_limite) # reducir positivas
         else:
-            negativas = random.sample(negativas, nuevo_limite)
+            negativas = random.sample(negativas, nuevo_limite) # reducir negativas
 
         _log(callbacks, f"Tamaños ajustados: Positivas: {len(positivas)}, Negativas: {len(negativas)}")
     else:
         _log(callbacks, f"Diferencia ({diff}) está dentro del límite de {max_diff}. No se requiere downsampling.")
 
-
+    # recombinar de nuevo
     dataset_balanceado = positivas + negativas
     random.shuffle(dataset_balanceado)
 
