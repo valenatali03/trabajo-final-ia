@@ -1,9 +1,19 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QSpinBox, QFormLayout
 import clean
 from const import MAX_WORDS, MIN_WORDS, DATASET_NAME
+
 class CleanTab(QWidget):
+    """
+    Pestaña para la limpieza del dataset.
+    Permite configurar filtros de longitud de palabras (mínimo y máximo) y ejecutar
+    la función de limpieza sobre el archivo JSON especificado.
+    """
 
     def __init__(self):
+        """
+        Inicializa los controles de configuración (nombre de archivo, spinboxes de límites)
+        y el botón de acción para ejecutar la limpieza.
+        """
         super().__init__()
 
         layout = QFormLayout()

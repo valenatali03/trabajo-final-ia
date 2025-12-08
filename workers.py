@@ -6,6 +6,16 @@ from PySide6.QtCore import QObject, Signal
 from structs import SteamApps, Dataset
 
 class WorkerSignals(QObject):
+    """
+    Define las señales utilizadas por los workers para comunicarse con el hilo principal de la GUI.
+
+    Attributes:
+        finished (Signal): Se emite cuando el proceso ha terminado (con o sin éxito).
+        error (Signal): Se emite cuando ocurre un error, enviando un mensaje de texto.
+        log (Signal): Se emite para enviar mensajes de registro o estado.
+        progress (Signal): Se emite para actualizar barras de progreso (0-100).
+        data_ready (Signal): Se emite cuando los datos han sido procesados y están listos para enviarse.
+    """
     finished = Signal()
     error = Signal(str)
     log = Signal(str)
@@ -13,7 +23,17 @@ class WorkerSignals(QObject):
     data_ready = Signal(list)
 
 class SteamWorker(QObject):
+    """
+    Worker encargado de interactuar con la API de Steam para obtener la lista de aplicaciones.
+    Se ejecuta en un hilo separado para no bloquear la interfaz.
+    """
     def __init__(self, api_key: str):
+        """
+        Inicializa el worker con la API Key necesaria.
+
+        Args:
+            api_key (str): La clave de API de Steam proporcionada por el usuario.
+        """
         super().__init__()
         self.signals = WorkerSignals()
         self.is_running: bool = True
@@ -23,6 +43,11 @@ class SteamWorker(QObject):
         self.api_key: str = api_key
 
     def run(self) -> None:
+        """
+        Ejecuta la lógica principal de obtención de datos.
+        Realiza peticiones paginadas a la API de Steam, procesa la respuesta JSON
+        y emite señales de progreso o error según corresponda.
+        """
         if not self.api_key:
             self.signals.error.emit("Por favor, coloca una API Key válida.")
             self.signals.finished.emit()
@@ -76,7 +101,21 @@ class SteamWorker(QObject):
             self.signals.finished.emit()
 
 class DatasetWorker(QObject):
+    """
+    Worker encargado de la generación o recuperación del dataset de reseñas.
+    Gestiona la obtención de reviews positivas y negativas en segundo plano.
+    """
     def __init__(self, app_ids: List[int], pos_limit: int, neg_limit: int, filename: str, max_diff: int):
+        """
+        Configura los parámetros para la creación del dataset.
+
+        Args:
+            app_ids (List[int]): Lista de IDs de aplicaciones de Steam a procesar.
+            pos_limit (int): Límite de reseñas positivas a obtener.
+            neg_limit (int): Límite de reseñas negativas a obtener.
+            filename (str): Nombre del archivo donde se guardará o leerá el caché.
+            max_diff (int): Diferencia máxima permitida entre cantidad de reseñas positivas y negativas.
+        """
         super().__init__()
         self.signals = WorkerSignals()
         self.app_ids = app_ids
@@ -87,6 +126,10 @@ class DatasetWorker(QObject):
         self.is_running = True
 
     def run(self) -> None:
+        """
+        Ejecuta la lógica de obtención de reviews llamando al módulo 'dataset'.
+        Utiliza callbacks para comunicar el progreso y estado a la GUI.
+        """
         callbacks = {
             'check_stop': lambda: not self.is_running,
             'progress': self.signals.progress.emit,
@@ -113,4 +156,7 @@ class DatasetWorker(QObject):
             self.signals.finished.emit()
 
     def stop(self) -> None:
+        """
+        Señaliza al worker para que detenga su ejecución de manera segura.
+        """
         self.is_running = False

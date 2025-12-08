@@ -7,8 +7,17 @@ from tabs.test_tab import TestTab
 from tabs.train_tab import TrainTab
 
 class MainWindow(QMainWindow):
+    """
+    Ventana principal de la aplicación.
+    Contenedor principal que organiza las diferentes funcionalidades (Dataset, Limpieza, 
+    Entrenamiento, Prueba) mediante pestañas (QTabWidget).
+    """
 
     def __init__(self):
+        """
+        Inicializa la ventana principal, instancia el gestor de datos y configura
+        las pestañas de la aplicación. Conecta señales entre pestañas dependientes.
+        """
         super().__init__()
 
         self.dataset_manager = DatasetManager(STEAM_APPS_CACHE)
@@ -29,6 +38,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.train_tab, "Entrenamiento")
         self.tabs.addTab(self.test_tab, "Prueba")
 
+        # Conectar señal: cuando termina el entrenamiento, actualizar el modelo en la pestaña de prueba
         self.train_tab.train_finished.connect(self.test_tab.update_model)
         
         self.setCentralWidget(self.tabs)

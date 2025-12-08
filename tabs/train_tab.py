@@ -3,9 +3,22 @@ from PySide6.QtCore import Signal
 from const import LEARNING_RATE, TEST_SIZE, EPOCHS, DATASET_NAME, MODEL_DEFAULT_DIR_NAME
 from datetime import datetime
 import train
+
 class TrainTab(QWidget):
+    """
+    Pestaña de configuración y ejecución del entrenamiento del modelo.
+    Permite ajustar hiperparámetros como epochs, learning rate y test size.
+    
+    Attributes:
+        train_finished (Signal): Se emite con la ruta del modelo generado al finalizar el entrenamiento.
+    """
     train_finished = Signal(str)
+
     def __init__(self):
+        """
+        Inicializa los campos de entrada con valores por defecto definidos en `const.py`
+        y configura el layout del formulario.
+        """
         super().__init__()
 
         layout = QFormLayout()
@@ -31,8 +44,13 @@ class TrainTab(QWidget):
         layout.addRow(self.progress)
 
         self.setLayout(layout)
-    def iniciar_entrenamiento(self):
 
+    def iniciar_entrenamiento(self):
+        """
+        Recopila los parámetros configurados, crea un directorio con timestamp para el modelo,
+        y ejecuta el proceso de entrenamiento.
+        Nota: Utiliza processEvents para actualizar la UI, aunque el entrenamiento es bloqueante en este hilo.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = f"./{MODEL_DEFAULT_DIR_NAME}_{timestamp}"
         dataset = self.line_edit_dataset_file.text()

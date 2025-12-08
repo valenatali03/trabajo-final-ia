@@ -8,7 +8,20 @@ from dataset_manager import DatasetManager
 from workers import DatasetWorker
 
 class DatasetTab(QWidget):
+    """
+    Pestaña encargada de la creación y configuración del dataset.
+    Permite seleccionar múltiples juegos, definir límites de reseñas (positivas/negativas)
+    y descargar la información utilizando un worker en segundo plano.
+    """
     def __init__(self, dataset_manager: DatasetManager):
+        """
+        Inicializa la interfaz de la pestaña de dataset.
+        Configura el área de desplazamiento para la lista de juegos, los campos de configuración
+        y conecta los validadores de entrada.
+
+        Args:
+            dataset_manager (DatasetManager): Gestor para obtener la lista de juegos disponibles y guardar el resultado.
+        """
         super().__init__()
 
         self.dataset_manager = dataset_manager
@@ -97,6 +110,13 @@ class DatasetTab(QWidget):
         self.agregar_nueva_fila()
 
     def obtener_juegos_seleccionados(self) -> set:
+        """
+        Recorre las filas de juegos añadidas y extrae los IDs o nombres seleccionados.
+        Útil para filtrar sugerencias en los autocompletados.
+
+        Returns:
+            set: Conjunto de cadenas con los juegos ya seleccionados en la interfaz.
+        """
         seleccionados = set()
         for i in range(self.layout_items.count()):
             fila = self.layout_items.itemAt(i).widget()
@@ -108,11 +128,19 @@ class DatasetTab(QWidget):
         return seleccionados
 
     def agregar_nueva_fila(self):
+        """
+        Instancia y agrega un nuevo widget `FilaJuego` al layout vertical.
+        Permite al usuario seleccionar un nuevo juego.
+        """
         fila = FilaJuego(self.modelo_completer, self.todos_los_juegos, self.obtener_juegos_seleccionados)
         self.layout_items.addWidget(fila)
         fila.line_edit_appid.setFocus()
 
     def cargar_datos(self):
+        """
+        Carga la lista completa de aplicaciones de Steam desde el caché local
+        para alimentar el autocompletado.
+        """
         try:
             steamapps = self.dataset_manager.obtener_apps_json()
             self.todos_los_juegos = [f"{app['appid']} ({app['name']})" for app in steamapps]
@@ -120,6 +148,10 @@ class DatasetTab(QWidget):
             self.todos_los_juegos = []
 
     def crear_dataset(self) -> None:
+        """
+        Recopila la configuración de la UI (IDs, límites, nombre de archivo),
+        bloquea la interfaz y lanza el `DatasetWorker` en un hilo separado para generar el dataset.
+        """
         app_ids = []
         try:
             for i in range(self.layout_items.count()):
@@ -177,24 +209,34 @@ class DatasetTab(QWidget):
             print(f"Error al procesar: {e}")
 
     def mostrar_error(self, mensaje_error):
+        """
+        Muestra un cuadro de diálogo con el mensaje de error.
+        """
         QMessageBox.critical(self, "Error", mensaje_error)
 
     def procesar_datos_exitosos(self, datos):
+        """
+        Callback ejecutado cuando el worker finaliza exitosamente.
+        Guarda los datos generados y notifica al usuario.
+        """
         dataset = DatasetManager(self.line_edit_filename.text())
         dataset.guardar_datos(datos)
 
         QMessageBox.information(self, "Éxito", "Dataset creado exitosamente")
     
     def actualizar_barra_progreso(self, valor):
+        """Actualiza el valor de la barra de progreso."""
         self.progress_bar.setValue(valor)
 
     def limpiar_thread(self):
+        """Limpia el hilo y el worker de memoria."""
         self.worker_thread.quit()
         self.worker_thread.wait()
         self.worker_thread.deleteLater()
         self.worker.deleteLater()
 
     def restaurar_ui(self):
+        """Reactiva todos los controles de la interfaz después de finalizar el proceso."""
         for i in range(self.layout_items.count()):
                 fila = self.layout_items.itemAt(i).widget()
                 if isinstance(fila, FilaJuego):
@@ -222,6 +264,7 @@ class DatasetTab(QWidget):
         self.status_label.setVisible(False)
 
     def validar_extension_json(self):
+        """Asegura que el nombre del archivo termine en .json."""
         texto = self.line_edit_filename.text().strip()
         
         if not texto:
@@ -232,7 +275,19 @@ class DatasetTab(QWidget):
             self.line_edit_filename.setText(nuevo_texto)
 
 class FilaJuego(QWidget):
+    """
+    Widget que representa una fila individual para la selección de un juego.
+    Incluye un campo de texto con autocompletado y un botón para eliminarse a sí mismo.
+    """
     def __init__(self, modelo_juegos : QStringListModel, lista_juegos, callback_juegos_usados):
+        """
+        Inicializa la fila.
+
+        Args:
+            modelo_juegos (QStringListModel): Modelo de datos para el QCompleter.
+            lista_juegos (list): Lista completa de juegos disponibles para filtrar.
+            callback_juegos_usados (callable): Función para obtener los juegos ya seleccionados en otras filas.
+        """
         super().__init__()
 
         self.modelo_juegos = modelo_juegos
@@ -264,6 +319,10 @@ class FilaJuego(QWidget):
         self.btn_eliminar.clicked.connect(self.eliminar_fila)
 
     def actualizar_sugerencias(self, texto_usuario):
+        """
+        Filtra la lista de juegos basándose en la entrada del usuario y actualiza el QCompleter.
+        Evita sugerir juegos que ya han sido seleccionados en otras filas.
+        """
         if not texto_usuario:
             return
 
@@ -284,7 +343,9 @@ class FilaJuego(QWidget):
         self.completer.complete()
 
     def eliminar_fila(self):
+        """Elimina este widget de la interfaz."""
         self.deleteLater()
 
     def obtener_texto(self):
+        """Retorna el texto actual del campo de entrada."""
         return self.line_edit_appid.text().strip()
